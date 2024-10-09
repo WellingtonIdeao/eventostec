@@ -16,10 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class EventService {
@@ -84,7 +81,47 @@ public class EventService {
     public List<EventResponseDTO> getUpcomingEvents(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Event> eventPage = this.repository.findUpcomingEvents(new Date(), pageable);
-        return eventPage.map(event -> new EventResponseDTO(event.getId(), event.getTitle(), event.getDescription(), event.getDate(), "", "", event.getRemote(), event.getEventUrl(), event.getImgUrl()))
+        return eventPage.map(event -> new EventResponseDTO(
+                        event.getId(),
+                        event.getTitle(),
+                        event.getDescription(),
+                        event.getDate(),
+                        event.getAddress() != null ? event.getAddress().getCity(): "",
+                        event.getAddress() != null ? event.getAddress().getUf(): "",
+                        event.getRemote(),
+                        event.getEventUrl(),
+                        event.getImgUrl()))
                 .stream().toList();
+    }
+
+    public List<EventResponseDTO> getFilterEvents(int page, int size, String title, String city, String uf, Date startDate, Date endDate) {
+
+        title = (title != null) ? title : "";
+        city = (city != null) ? city : "";
+        uf  = (uf != null) ? uf : "";
+        startDate = (startDate != null) ? startDate : new Date();
+        endDate = (endDate != null) ? endDate : getFutureDate();
+
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Event> eventPage = this.repository.findFilteredEvents(title, city, uf, startDate, endDate, pageable);
+        return eventPage.map(event -> new EventResponseDTO(
+                        event.getId(),
+                        event.getTitle(),
+                        event.getDescription(),
+                        event.getDate(),
+                        event.getAddress() != null ? event.getAddress().getCity(): "",
+                        event.getAddress() != null ? event.getAddress().getUf(): "",
+                        event.getRemote(),
+                        event.getEventUrl(),
+                        event.getImgUrl()))
+                .stream().toList();
+    }
+
+    private Date getFutureDate() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        calendar.add(Calendar.YEAR, 10);
+        return calendar.getTime();
     }
 }
